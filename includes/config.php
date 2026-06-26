@@ -24,6 +24,10 @@ try {
             PDO::ATTR_EMULATE_PREPARES   => false,
         ]
     );
+    
+    echo "Koneksi berhasil";
+    exit;
+
 } catch (PDOException $e) {
     die('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Error DB</title>
     <style>body{font-family:sans-serif;padding:40px;background:#fef2f2}
