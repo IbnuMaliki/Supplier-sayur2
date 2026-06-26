@@ -15,6 +15,14 @@ define('DB_CHARSET', 'utf8mb4');
 
 // Koneksi PDO
 try {
+    var_dump([
+        'HOST' => getenv('MYSQLHOST'),
+        'USER' => getenv('MYSQLUSER'),
+        'DB'   => getenv('MYSQLDATABASE'),
+        'PORT' => getenv('MYSQLPORT'),
+    ]);
+    exit;
+    
     $pdo = new PDO(
         "mysql:host=".DB_HOST.";port=".DB_PORT.";dbname=".DB_NAME.";charset=".DB_CHARSET,
         DB_USER, DB_PASS,
