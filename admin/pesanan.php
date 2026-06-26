@@ -104,7 +104,7 @@ include __DIR__ . '/includes/admin_header.php';
 </div>
 <table class="data-table">
   <thead>
-    <tr><th>ID Pesanan</th><th>Customer</th><th>Info Pengiriman</th><th>Total</th><th>VA</th><th>Status</th><th>Tanggal</th><th>Update Status</th></tr>
+    <tr><th>ID Pesanan</th><th>Customer</th><th>Info Pengiriman</th><th>Total</th><th>VA</th><th>Status</th><th>Waktu</th><th>Update Status</th></tr>
   </thead>
   <tbody>
     <?php if (count($pesananList) === 0): ?>
@@ -173,13 +173,19 @@ include __DIR__ . '/includes/admin_header.php';
       </td>
       <td style="font-size:12px; color:var(--slate-400);"><?= date('H:i', strtotime($p['created_at'])) ?></td>
       <td>
-        <button class="btn-action btn-edit" onclick="document.getElementById('modal-<?= $p['id'] ?>').style.display='flex'" style="margin-right:4px;">Update</button>
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:80px;">
+        <button class="btn-action btn-edit" onclick="document.getElementById('modal-<?= $p['id'] ?>').style.display='flex'" style="width:100%;text-align:center;">Update</button>
+        <?php if ($p['status'] !== 'dibatalkan'): ?>
+        <a href="struk.php?id=<?= $p['id'] ?>" target="_blank" class="btn-action" style="width:100%;text-align:center;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;">Struk</a>
+        <?php endif; ?>
         <a href="?action=delete&id=<?= $p['id'] ?>"
-           class="btn-action btn-del"
-           onclick="return confirm('Hapus pesanan <?= addslashes(sanitize($p['kode_pesanan'])) ?>?\n\nData pesanan akan dihapus permanen.')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-          Hapus
-        </a>
+     class="btn-action btn-del"
+     style="width:100%;text-align:center;"
+     onclick="return confirm('Hapus pesanan <?= addslashes(sanitize($p['kode_pesanan'])) ?>?\\n\\nData pesanan akan dihapus permanen.')">
+    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+    Hapus
+  </a>
+</div>
       </td>
     </tr>
     <!-- Modal Update Status -->
@@ -187,8 +193,10 @@ include __DIR__ . '/includes/admin_header.php';
       <div style="background:white;border-radius:var(--radius-xl);width:100%;max-width:480px;box-shadow:var(--shadow-lg);overflow:hidden;">
         <div style="padding:20px 24px;border-bottom:1px solid var(--slate-100);display:flex;justify-content:space-between;align-items:center;">
           <div style="font-family:var(--font-display);font-size:18px;font-weight:700;">Update Pesanan #<?= sanitize($p['kode_pesanan']) ?></div>
-          <button onclick="document.getElementById('modal-<?= $p['id'] ?>').style.display='none'" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--slate-400);"></button>
-        </div>
+          <button onclick="document.getElementById('modal-<?= $p['id'] ?>').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--slate-400);padding:4px;display:flex;align-items:center;justify-content:center;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+</div>
         <div style="padding:24px;">
           <!-- Detail produk -->
           <?php
@@ -242,6 +250,7 @@ include __DIR__ . '/includes/admin_header.php';
               </div>
             </div>
             <button type="submit" class="btn btn-secondary btn-full">Simpan Status</button>
+            <button type="button" onclick="document.getElementById('modal-<?= $p['id'] ?>').style.display='none'" class="btn btn-outline-green btn-full" style="margin-top:8px;">Batal</button>
           </form>
         </div>
       </div>
