@@ -39,6 +39,3 @@ function kirimNotifWhatsApp($kode, $namaPenerima, $noHp, $alamat, $catatan, $met
     curl_exec($curl);
     curl_close($curl);
 }
-    curl_exec($curl);
-    curl_close($curl);
-}
