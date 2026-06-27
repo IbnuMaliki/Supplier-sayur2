@@ -25,7 +25,7 @@ function kirimNotifWhatsApp($kode, $namaPenerima, $noHp, $alamat, $catatan, $met
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,
         CURLOPT_POSTFIELDS     => [
-            'target'  => '085693425118',
+            'target'  => '085693425103',
             'message' => $pesan,
         ],
         CURLOPT_HTTPHEADER => [
