@@ -8,8 +8,7 @@ function kirimNotifWhatsApp($kode, $namaPenerima, $noHp, $alamat, $catatan, $met
     }
     $totalFmt = number_format($total, 0, ',', '.');
     $catatan  = $catatan ?: '-';
-
-    $pesan = "🥬 *PESANAN BARU MASUK!*\n\n"
+    $pesan = "🥬 *PESANAN BARU MASUK\!*\n\n"
            . "📋 *Kode:* $kode\n"
            . "👤 *Nama:* $namaPenerima\n"
            . "📱 *HP:* $noHp\n"
@@ -19,17 +18,21 @@ function kirimNotifWhatsApp($kode, $namaPenerima, $noHp, $alamat, $catatan, $met
            . "*Detail Produk:*\n$itemList\n"
            . "💰 *Total: Rp $totalFmt*";
 
+    $token  = getenv('TELEGRAM_BOT_TOKEN');
+    $chatId = getenv('TELEGRAM_CHAT_ID');
+
     $curl = curl_init();
     curl_setopt_array($curl, [
-        CURLOPT_URL            => 'https://api.fonnte.com/send',
+        CURLOPT_URL            => "https://api.telegram.org/bot{$token}/sendMessage",
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => [
-            'target'  => '085693425103',
-            'message' => $pesan,
-        ],
+        CURLOPT_POSTFIELDS     => json_encode([
+            'chat_id'    => $chatId,
+            'text'       => $pesan,
+            'parse_mode' => 'MarkdownV2',
+        ]),
         CURLOPT_HTTPHEADER => [
-            'Authorization: b8f7tB65wtAnPfiyGGFv',
+            'Content-Type: application/json',
         ],
     ]);
     curl_exec($curl);
