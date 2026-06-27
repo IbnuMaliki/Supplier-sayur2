@@ -8,15 +8,16 @@ function kirimNotifWhatsApp($kode, $namaPenerima, $noHp, $alamat, $catatan, $met
     }
     $totalFmt = number_format($total, 0, ',', '.');
     $catatan  = $catatan ?: '-';
-    $pesan = "🥬 *PESANAN BARU MASUK\!*\n\n"
-           . "📋 *Kode:* $kode\n"
-           . "👤 *Nama:* $namaPenerima\n"
-           . "📱 *HP:* $noHp\n"
-           . "📍 *Alamat:* $alamat\n"
-           . "📝 *Catatan:* $catatan\n"
-           . "💳 *Metode:* $metode\n\n"
-           . "*Detail Produk:*\n$itemList\n"
-           . "💰 *Total: Rp $totalFmt*";
+
+    $pesan = "🥬 <b>PESANAN BARU MASUK!</b>\n\n"
+           . "📋 <b>Kode:</b> $kode\n"
+           . "👤 <b>Nama:</b> $namaPenerima\n"
+           . "📱 <b>HP:</b> $noHp\n"
+           . "📍 <b>Alamat:</b> $alamat\n"
+           . "📝 <b>Catatan:</b> $catatan\n"
+           . "💳 <b>Metode:</b> $metode\n\n"
+           . "<b>Detail Produk:</b>\n$itemList\n"
+           . "💰 <b>Total: Rp $totalFmt</b>";
 
     $token  = getenv('TELEGRAM_BOT_TOKEN');
     $chatId = getenv('TELEGRAM_CHAT_ID');
@@ -29,12 +30,15 @@ function kirimNotifWhatsApp($kode, $namaPenerima, $noHp, $alamat, $catatan, $met
         CURLOPT_POSTFIELDS     => json_encode([
             'chat_id'    => $chatId,
             'text'       => $pesan,
-            'parse_mode' => 'MarkdownV2',
+            'parse_mode' => 'HTML',
         ]),
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json',
         ],
     ]);
+    curl_exec($curl);
+    curl_close($curl);
+}
     curl_exec($curl);
     curl_close($curl);
 }
