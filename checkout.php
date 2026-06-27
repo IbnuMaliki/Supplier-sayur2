@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare("DELETE FROM keranjang WHERE user_id=?")->execute([$userId]);
 
             $pdo->commit();
-            register_shutdown_function('kirimNotifWhatsApp'($kode, $nama, $hp, $alamat, $catatan, $labelMetode, $total, $items);
+            register_shutdown_function('kirimNotifWhatsApp', $kode, $nama, $hp, $alamat, $catatan, $labelMetode, $total, $items);
             $pesanSukses = ($metodeTipe === 'cash')
                 ? "Pesanan $kode berhasil dibuat! Siapkan uang tunai saat barang tiba."
                 : "Pesanan $kode berhasil dibuat! Segera lakukan pembayaran.";
