@@ -19,8 +19,8 @@ function kirimNotifWhatsApp($kode, $namaPenerima, $noHp, $alamat, $catatan, $met
            . "<b>Detail Produk:</b>\n$itemList\n"
            . "💰 <b>Total: Rp $totalFmt</b>";
 
-    $token  = getenv('8983940860:AAF_0CLEdhJbVVxjhmXYK3EVYBDCZfsn6No');
-    $chatId = getenv('5000650091');
+    $token  = getenv('TELEGRAM_BOT_TOKEN');
+    $chatId = getenv('TELEGRAM_CHAT_ID');
 
     $curl = curl_init();
     curl_setopt_array($curl, [
