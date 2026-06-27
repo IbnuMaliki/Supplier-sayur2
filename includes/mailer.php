@@ -14,8 +14,8 @@ function kirimEmailPesananBaru($kode, $namaPenerima, $noHp, $alamat, $catatan, $
         $mail->SMTPAuth   = true;
         $mail->Username   = getenv('MAIL_USERNAME');
         $mail->Password   = getenv('MAIL_PASSWORD');
-        $mail->SMTPSecure = 'tls';
-        $mail->Port       = 587;
+        $mail->SMTPSecure = 'ssl';
+        $mail->Port       = 465;
         $mail->CharSet    = 'UTF-8';
 
         $mail->setFrom(getenv('MAIL_USERNAME'), 'Supplier Sayur Azam Heri');
