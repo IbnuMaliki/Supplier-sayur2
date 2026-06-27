@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/mailer.php';
 requireLogin();
 $pageTitle = 'Checkout';
 $userId = $_SESSION['user_id'];
@@ -79,6 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare("DELETE FROM keranjang WHERE user_id=?")->execute([$userId]);
 
             $pdo->commit();
+            kirimEmailPesananBaru($kode, $nama, $hp, $alamat, $catatan, $labelMetode, $total, $items);
             $pesanSukses = ($metodeTipe === 'cash')
                 ? "Pesanan $kode berhasil dibuat! Siapkan uang tunai saat barang tiba."
                 : "Pesanan $kode berhasil dibuat! Segera lakukan pembayaran.";
