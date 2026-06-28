@@ -77,7 +77,16 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $pesananList = $stmt->fetchAll();
 
-$statusOptions = [''=>'Semua Status','menunggu_bayar'=>'<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Menunggu','diproses'=>' Diproses','dikirim'=>' Dikirim','selesai'=>' Selesai','dibatalkan'=>' Dibatalkan'];
+$statusOptions = [
+    ''=>'Semua Status',
+    'menunggu_bayar'=>'<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Menunggu',
+    'menunggu_pembayaran'=>'<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Menunggu Pembayaran',
+    'dibayar'=>' Dibayar',
+    'diproses'=>' Diproses',
+    'dikirim'=>' Dikirim',
+    'selesai'=>' Selesai',
+    'dibatalkan'=>' Dibatalkan',
+];
 
 include __DIR__ . '/includes/admin_header.php';
 ?>
