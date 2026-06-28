@@ -32,7 +32,9 @@ function kirimNotifWhatsApp($kode, $namaPenerima, $noHp, $alamat, $catatan, $met
             'text'       => $pesan,
             'parse_mode' => 'HTML',
         ]),
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+        ],
     ]);
     curl_exec($curl);
     curl_close($curl);
