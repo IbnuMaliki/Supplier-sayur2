@@ -140,7 +140,7 @@ $timelineLabel = [
     'dikirim'             => 'Dikirim',
     'selesai'             => 'Selesai',
 ];
-$timelineIcon = ['','','',''];
+$timelineIcon = ['','','','',''];
 
 include __DIR__ . '/includes/header.php';
 ?>
