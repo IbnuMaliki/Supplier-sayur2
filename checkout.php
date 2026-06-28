@@ -239,10 +239,10 @@ function switchMetode(tipe) {
       window.location.href = '<?= APP_URL ?>/pesanan.php';
     },
     onError: function(result) {
-      alert('Pembayaran gagal. Silakan coba lagi.');
+      window.location.href = '<?= APP_URL ?>/pesanan.php';
     },
     onClose: function() {
-      alert('Pembayaran belum selesai.');
+      window.location.href = '<?= APP_URL ?>/pesanan.php';
     }
   });
 </script>
