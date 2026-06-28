@@ -1,10 +1,11 @@
 <?php
 require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/mailer.php';
+require_once __DIR__ . '/includes/midtrans.php';
 requireLogin();
 $pageTitle = 'Checkout';
 $userId = $_SESSION['user_id'];
 
-// Ambil data keranjang
 $stmt = $pdo->prepare("
     SELECT k.jumlah, p.id as produk_id, p.nama, p.harga, p.harga_grosir, p.min_grosir, p.stok, p.satuan
     FROM keranjang k JOIN produk p ON k.produk_id=p.id
@@ -14,76 +15,66 @@ $stmt->execute([$userId]);
 $items = $stmt->fetchAll();
 
 if (count($items) === 0) {
-    flashMessage('error', 'Keranjang kosong. Silakan tambah produk terlebih dahulu.');
+    flashMessage('error', 'Keranjang kosong.');
     redirect(APP_URL . '/produk.php');
 }
 
-// Ambil data user
 $userStmt = $pdo->prepare("SELECT * FROM users WHERE id=?");
 $userStmt->execute([$userId]);
 $user = $userStmt->fetch();
 
-// Hitung total
 $total = 0;
 foreach ($items as $item) {
     $h = $item['jumlah'] >= $item['min_grosir'] ? $item['harga_grosir'] : $item['harga'];
     $total += $h * $item['jumlah'];
 }
-$va = generateVirtualAccount();
 
-// Proses checkout
+$snapToken = null;
 $error = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nama       = trim($_POST['nama'] ?? '');
     $hp         = trim($_POST['no_hp'] ?? '');
     $alamat     = trim($_POST['alamat'] ?? '');
     $catatan    = trim($_POST['catatan'] ?? '');
-    $metodeTipe = trim($_POST['metode_tipe'] ?? 'va');
-    $metodeBank = trim($_POST['metode_bank'] ?? 'mandiri');
+    $metodeTipe = trim($_POST['metode_tipe'] ?? 'qris');
 
-    // Bentuk label metode pembayaran yang disimpan
-    $namaBank = [
-        'mandiri'=>'Bank Mandiri','bca'=>'Bank BCA','bni'=>'Bank BNI',
-        'bri'=>'Bank BRI','bsi'=>'Bank BSI',
-    ];
-    if ($metodeTipe === 'cash') {
-        $labelMetode = 'Bayar di Tempat (COD)';
-    } else {
-        $labelMetode = 'Virtual Account ' . ($namaBank[$metodeBank] ?? 'Mandiri');
-    }
+    $labelMetode = $metodeTipe === 'cash' ? 'Bayar di Tempat (COD)' : 'QRIS / E-Wallet';
 
     if (!$nama || !$hp || !$alamat) {
         $error = 'Nama, no HP, dan alamat wajib diisi.';
     } else {
         try {
             $pdo->beginTransaction();
-            $kode  = generateKodePesanan();
-            $vaNum = ($metodeTipe === 'va') ? generateVirtualAccount() : null;
+            $kode = generateKodePesanan();
 
-            // Buat pesanan — simpan metode_bayar lengkap
-            $stmt = $pdo->prepare("INSERT INTO pesanan (kode_pesanan,user_id,nama_penerima,no_hp,alamat_pengiriman,catatan,total_harga,metode_bayar,nomor_va) VALUES (?,?,?,?,?,?,?,?,?)");
-            $stmt->execute([$kode, $userId, $nama, $hp, $alamat, $catatan, $total, $labelMetode, $vaNum]);
+            $stmt = $pdo->prepare("INSERT INTO pesanan (kode_pesanan,user_id,nama_penerima,no_hp,alamat_pengiriman,catatan,total_harga,metode_bayar,status) VALUES (?,?,?,?,?,?,?,?,?)");
+            $statusAwal = $metodeTipe === 'cash' ? 'pending' : 'menunggu_pembayaran';
+            $stmt->execute([$kode, $userId, $nama, $hp, $alamat, $catatan, $total, $labelMetode, $statusAwal]);
             $pesananId = $pdo->lastInsertId();
 
-            // Detail pesanan
             foreach ($items as $item) {
                 $h = $item['jumlah'] >= $item['min_grosir'] ? $item['harga_grosir'] : $item['harga'];
                 $sub = $h * $item['jumlah'];
-                $stmt = $pdo->prepare("INSERT INTO detail_pesanan (pesanan_id,produk_id,nama_produk,harga_satuan,jumlah,subtotal) VALUES (?,?,?,?,?,?)");
-                $stmt->execute([$pesananId, $item['produk_id'], $item['nama'], $h, $item['jumlah'], $sub]);
-                // Kurangi stok
+                $pdo->prepare("INSERT INTO detail_pesanan (pesanan_id,produk_id,nama_produk,harga_satuan,jumlah,subtotal) VALUES (?,?,?,?,?,?)")
+                    ->execute([$pesananId, $item['produk_id'], $item['nama'], $h, $item['jumlah'], $sub]);
                 $pdo->prepare("UPDATE produk SET stok = stok - ? WHERE id=?")->execute([$item['jumlah'], $item['produk_id']]);
             }
 
-            // Kosongkan keranjang
             $pdo->prepare("DELETE FROM keranjang WHERE user_id=?")->execute([$userId]);
-
             $pdo->commit();
-            $pesanSukses = ($metodeTipe === 'cash')
-                ? "Pesanan $kode berhasil dibuat! Siapkan uang tunai saat barang tiba."
-                : "Pesanan $kode berhasil dibuat! Segera lakukan pembayaran.";
-            flashMessage('success', $pesanSukses);
-            redirect(APP_URL . '/pesanan.php');
+
+            register_shutdown_function('kirimNotifWhatsApp', $kode, $nama, $hp, $alamat, $catatan, $labelMetode, $total, $items);
+
+            if ($metodeTipe === 'cash') {
+                flashMessage('success', "Pesanan $kode berhasil! Siapkan uang tunai saat barang tiba.");
+                redirect(APP_URL . '/pesanan.php');
+            } else {
+                $snapToken = getMidtransSnapToken($kode, $total, $nama, $hp, $user['email'] ?? '', $items);
+                if (!$snapToken) {
+                    $error = 'Gagal menghubungi payment gateway. Coba lagi.';
+                }
+            }
 
         } catch (Exception $e) {
             $pdo->rollBack();
@@ -152,36 +143,32 @@ include __DIR__ . '/includes/header.php';
       </button>
     </div>
 
-    <!-- Panel VA -->
-    <div id="panel-va">
-      <div style="font-size:13px;font-weight:600;color:var(--slate-500);margin-bottom:10px;">Pilih Bank:</div>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
-        <?php
-        $banks = [
-          ['kode'=>'mandiri','nama'=>'Bank Mandiri','warna'=>'#003d79','label'=>'MAND','grad'=>'#003d79,#001f4d'],
-          ['kode'=>'bca',    'nama'=>'Bank BCA',    'warna'=>'#005b9f','label'=>'BCA', 'grad'=>'#005b9f,#00469e'],
-          ['kode'=>'bni',    'nama'=>'Bank BNI',    'warna'=>'#f26522','label'=>'BNI', 'grad'=>'#f26522,#d4521a'],
-          ['kode'=>'bri',    'nama'=>'Bank BRI',    'warna'=>'#00529b','label'=>'BRI', 'grad'=>'#00529b,#003d79'],
-          ['kode'=>'bsi',    'nama'=>'Bank BSI',    'warna'=>'#3d9b4b','label'=>'BSI', 'grad'=>'#3d9b4b,#2d7a38'],
-        ];
-        foreach ($banks as $b): ?>
-        <button type="button" id="bank-btn-<?= $b['kode'] ?>"
-          onclick="selectBank('<?= $b['kode'] ?>','<?= $b['nama'] ?>','<?= $b['warna'] ?>','<?= $b['label'] ?>','<?= $b['grad'] ?>','va')"
-          style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius-md);border:1.5px solid <?= $b['kode']==='mandiri'?'var(--green-500)':'var(--slate-200)' ?>;background:<?= $b['kode']==='mandiri'?'var(--green-50)':'white' ?>;cursor:pointer;transition:all 0.2s;font-family:var(--font-body);">
-          <div style="width:36px;height:36px;border-radius:6px;background:<?= $b['warna'] ?>;color:white;font-weight:800;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><?= $b['label'] ?></div>
-          <span style="font-size:13px;font-weight:600;color:var(--slate-700);"><?= $b['nama'] ?></span>
-          <?php if ($b['kode']==='mandiri'): ?><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green-500)" stroke-width="2.5" id="check-<?= $b['kode'] ?>"><polyline points="20 6 9 17 4 12"/></svg><?php else: ?><span id="check-<?= $b['kode'] ?>" style="display:none;"></span><?php endif; ?>
-        </button>
-        <?php endforeach; ?>
-      </div>
+    <!-- Tab QRIS / Cash -->
+    <div style="display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap;">
+      <button type="button" id="tab-qris" onclick="switchMetode('qris')"
+        style="flex:1;min-width:120px;padding:12px;border-radius:var(--radius-md);border:1.5px solid var(--green-500);background:var(--green-50);color:var(--green-700);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:var(--font-body);">
+        QRIS / E-Wallet
+        <div style="font-size:11px;font-weight:400;margin-top:2px;color:var(--green-600);">GoPay, ShopeePay, QRIS</div>
+      </button>
+      <button type="button" id="tab-cash" onclick="switchMetode('cash')"
+        style="flex:1;min-width:120px;padding:12px;border-radius:var(--radius-md);border:1.5px solid var(--slate-200);background:white;color:var(--slate-600);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:var(--font-body);">
+        Cash / COD
+        <div style="font-size:11px;font-weight:400;margin-top:2px;color:var(--slate-400);">Bayar tunai saat barang tiba</div>
+      </button>
+    </div>
 
-      <div class="va-card" id="va-card-preview" style="margin-top:0;">
-        <div class="va-bank-name" id="va-bank-name">BANK MANDIRI — VIRTUAL ACCOUNT</div>
-        <div class="va-number"><?= $va ?></div>
-        <div class="va-amount"><?= formatRupiah($total) ?></div>
-        <div class="va-expiry">Berlaku 24 jam setelah pesanan dibuat</div>
+    <!-- Panel QRIS -->
+    <div id="panel-qris">
+      <div style="background:white;border:1.5px solid #d1fae5;border-radius:16px;padding:24px;text-align:center;">
+        <div style="font-size:17px;font-weight:800;color:var(--slate-800);margin-bottom:8px;">Bayar via QRIS / E-Wallet</div>
+        <div style="font-size:13px;color:var(--slate-500);line-height:1.7;">
+          Setelah klik "Konfirmasi Pesanan", popup pembayaran akan muncul.<br>
+          Pilih metode: QRIS, GoPay, atau ShopeePay.
+        </div>
       </div>
     </div>
+
+    <input type="hidden" name="metode_tipe" id="input-metode-tipe" value="qris">
 
     <!-- Panel Cash / COD -->
     <div id="panel-cash" style="display:none;">
@@ -225,17 +212,9 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <script>
-const bankGradients = {
-  mandiri:'#003d79,#001f4d',bca:'#005b9f,#00469e',bni:'#f26522,#d4521a',
-  bri:'#00529b,#003d79',bsi:'#3d9b4b,#2d7a38',
-};
-let currentTipe = 'va';
-let currentBank = 'mandiri';
-
 function switchMetode(tipe) {
-  currentTipe = tipe;
   document.getElementById('input-metode-tipe').value = tipe;
-  ['va','cash'].forEach(t => {
+  ['qris','cash'].forEach(t => {
     const tab = document.getElementById('tab-'+t);
     if (!tab) return;
     tab.style.borderColor = t===tipe ? 'var(--green-500)' : 'var(--slate-200)';
@@ -243,41 +222,31 @@ function switchMetode(tipe) {
     tab.style.color       = t===tipe ? 'var(--green-700)' : 'var(--slate-600)';
     tab.querySelector('div').style.color = t===tipe ? 'var(--green-600)' : 'var(--slate-400)';
   });
-  document.getElementById('panel-va').style.display   = tipe==='va'   ? 'block' : 'none';
-  document.getElementById('panel-cash').style.display = tipe==='cash' ? 'block' : 'none';
-  const infoBayar = document.getElementById('info-pembayaran');
-  if (infoBayar) infoBayar.style.display = tipe==='cash' ? 'none' : 'block';
-  if (tipe==='va') {
-    selectBank('mandiri','Bank Mandiri','#003d79','MAND','#003d79,#001f4d','va');
-  } else {
-    document.getElementById('input-metode-bank').value = '';
-  }
-}
-
-function selectBank(kode, nama, warna, label, grad, tipe) {
-  currentBank = kode;
-  document.getElementById('input-metode-bank').value = kode;
-  if (tipe==='va') {
-    // Reset VA buttons
-    ['mandiri','bca','bni','bri','bsi'].forEach(k => {
-      const b = document.getElementById('bank-btn-'+k);
-      if (b) { b.style.borderColor='var(--slate-200)'; b.style.background='white'; }
-      const ck = document.getElementById('check-'+k);
-      if (ck) ck.style.display='none';
-    });
-    const btn = document.getElementById('bank-btn-'+kode);
-    if (btn) { btn.style.borderColor='var(--green-500)'; btn.style.background='var(--green-50)'; }
-    const ck = document.getElementById('check-'+kode);
-    if (ck) ck.style.display='inline';
-    // Update VA card
-    const card = document.getElementById('va-card-preview');
-    const g = grad || (bankGradients[kode] || '#003d79,#001f4d');
-    if (card) card.style.background = 'linear-gradient(135deg,'+g+')';
-    const bn = document.getElementById('va-bank-name');
-    if (bn) bn.textContent = nama.toUpperCase() + ' — VIRTUAL ACCOUNT';
-  }
+  document.getElementById('panel-qris').style.display  = tipe==='qris'  ? 'block' : 'none';
+  document.getElementById('panel-cash').style.display  = tipe==='cash'  ? 'block' : 'none';
 }
 </script>
+
+<?php if ($snapToken): ?>
+<script src="https://app.sandbox.midtrans.com/snap/snap.js"
+        data-client-key="<?= getenv('MIDTRANS_CLIENT_KEY') ?>"></script>
+<script>
+  window.snap.pay('<?= $snapToken ?>', {
+    onSuccess: function(result) {
+      window.location.href = '<?= APP_URL ?>/pesanan.php';
+    },
+    onPending: function(result) {
+      window.location.href = '<?= APP_URL ?>/pesanan.php';
+    },
+    onError: function(result) {
+      alert('Pembayaran gagal. Silakan coba lagi.');
+    },
+    onClose: function() {
+      alert('Pembayaran belum selesai.');
+    }
+  });
+</script>
+<?php endif; ?>
 
 <!-- Kanan: Ringkasan -->
 <div>
