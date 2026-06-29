@@ -45,10 +45,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     $pesananId  = (int)$_POST['pesanan_id'];
     $newStatus  = $_POST['status'];
     $alasan     = trim($_POST['alasan_batal'] ?? '');
+    $estimasi   = trim($_POST['estimasi_pengiriman'] ?? '') ?: null;
     $allowed    = ['menunggu_bayar','diproses','dikirim','selesai','dibatalkan'];
     if (in_array($newStatus, $allowed)) {
         $dibatalOleh = ($newStatus === 'dibatalkan') ? 'admin' : null;
-        $pdo->prepare("UPDATE pesanan SET status=?, alasan_batal=?, dibatal_oleh=? WHERE id=?")->execute([$newStatus, $alasan, $dibatalOleh, $pesananId]);
+        $pdo->prepare("UPDATE pesanan SET status=?, alasan_batal=?, dibatal_oleh=?, estimasi_pengiriman=? WHERE id=?")->execute([$newStatus, $alasan, $dibatalOleh, $estimasi, $pesananId]);
         if ($newStatus === 'dibatalkan') {
             $details = $pdo->prepare("SELECT produk_id, jumlah FROM detail_pesanan WHERE pesanan_id=?");
             $details->execute([$pesananId]);
