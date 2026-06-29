@@ -258,7 +258,34 @@ $tabs = [
 
   <!-- Timeline -->
   <?php if ($p['status'] !== 'dibatalkan'): ?>
-  <div class="order-timeline">
+  <?php if (!empty($p['estimasi_pengiriman']) && in_array($p['status'], ['diproses','dikirim'])): ?>
+<div style="padding:12px 20px;background:#eff6ff;border-top:1px solid #bfdbfe;display:flex;align-items:center;gap:10px;">
+  <div style="width:36px;height:36px;border-radius:8px;background:#3b82f6;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+  </div>
+  <div>
+    <div style="font-size:11px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:0.5px;">Estimasi Pengiriman</div>
+    <div style="font-size:15px;font-weight:800;color:#1e3a8a;">
+      <?php
+        $tgl = strtotime($p['estimasi_pengiriman']);
+        $hari = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+        $bln  = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        echo $hari[date('w',$tgl)] . ', ' . date('j',$tgl) . ' ' . $bln[(int)date('n',$tgl)] . ' ' . date('Y',$tgl);
+      ?>
+    </div>
+    <?php
+      $selisih = (int)ceil(($tgl - time()) / 86400);
+      if ($selisih > 0): ?>
+    <div style="font-size:12px;color:#3b82f6;margin-top:2px;"><?= $selisih ?> hari lagi</div>
+    <?php elseif ($selisih === 0): ?>
+    <div style="font-size:12px;color:#16a34a;font-weight:700;margin-top:2px;">Hari ini!</div>
+    <?php else: ?>
+    <div style="font-size:12px;color:#dc2626;margin-top:2px;">Sudah lewat estimasi</div>
+    <?php endif; ?>
+  </div>
+</div>
+<?php endif; ?>
+    <div class="order-timeline">
     <div class="timeline-steps">
       <?php foreach ($statusSteps as $idx => $step):
           $cls = '';
