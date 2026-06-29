@@ -128,21 +128,6 @@ include __DIR__ . '/includes/header.php';
       Metode Pembayaran
     </div>
 
-    <!-- Tab VA / Cash -->
-    <div style="display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap;">
-      <button type="button" id="tab-va" onclick="switchMetode('va')"
-        style="flex:1;min-width:120px;padding:12px;border-radius:var(--radius-md);border:1.5px solid var(--green-500);background:var(--green-50);color:var(--green-700);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:var(--font-body);">
-        Virtual Account
-        <div style="font-size:11px;font-weight:400;margin-top:2px;color:var(--green-600);">Transfer lewat ATM / Mobile Banking</div>
-      </button>
-
-      <button type="button" id="tab-cash" onclick="switchMetode('cash')"
-        style="flex:1;min-width:120px;padding:12px;border-radius:var(--radius-md);border:1.5px solid var(--slate-200);background:white;color:var(--slate-600);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:var(--font-body);">
-        Cash / COD
-        <div style="font-size:11px;font-weight:400;margin-top:2px;color:var(--slate-400);">Bayar tunai saat barang tiba</div>
-      </button>
-    </div>
-
     <!-- Tab QRIS / Cash -->
     <div style="display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap;">
       <button type="button" id="tab-qris" onclick="switchMetode('qris')"
@@ -167,8 +152,6 @@ include __DIR__ . '/includes/header.php';
         </div>
       </div>
     </div>
-
-    <input type="hidden" name="metode_tipe" id="input-metode-tipe" value="qris">
 
     <!-- Panel Cash / COD -->
     <div id="panel-cash" style="display:none;">
@@ -201,12 +184,11 @@ include __DIR__ . '/includes/header.php';
       </div>
     </div>
 
-    <!-- Hidden inputs -->
-    <input type="hidden" name="metode_tipe" id="input-metode-tipe" value="va">
-    <input type="hidden" name="metode_bank" id="input-metode-bank" value="mandiri">
+    <!-- Hidden input -->
+    <input type="hidden" name="metode_tipe" id="input-metode-tipe" value="qris">
 
     <div style="font-size:12px;color:var(--slate-400);margin-top:12px;line-height:1.6;" id="info-pembayaran">
-      Nomor VA / kode pembayaran final dikirimkan setelah pesanan dikonfirmasi.
+      Pembayaran diproses melalui Midtrans yang aman dan terenkripsi.
     </div>
   </div>
 </div>
@@ -222,8 +204,9 @@ function switchMetode(tipe) {
     tab.style.color       = t===tipe ? 'var(--green-700)' : 'var(--slate-600)';
     tab.querySelector('div').style.color = t===tipe ? 'var(--green-600)' : 'var(--slate-400)';
   });
-  document.getElementById('panel-qris').style.display  = tipe==='qris'  ? 'block' : 'none';
-  document.getElementById('panel-cash').style.display  = tipe==='cash'  ? 'block' : 'none';
+  document.getElementById('panel-qris').style.display = tipe==='qris' ? 'block' : 'none';
+  document.getElementById('panel-cash').style.display = tipe==='cash' ? 'block' : 'none';
+  document.getElementById('info-pembayaran').style.display = tipe==='cash' ? 'none' : 'block';
 }
 </script>
 
