@@ -28,11 +28,10 @@ $kode              = $data['order_id'];
 $transactionStatus = $data['transaction_status'];
 $fraudStatus       = $data['fraud_status'] ?? 'accept';
 
-// Tentukan status pesanan
 if ($transactionStatus === 'capture' && $fraudStatus === 'accept') {
-    $statusBaru = 'dibayar';
+    $statusBaru = 'diproses';
 } elseif ($transactionStatus === 'settlement') {
-    $statusBaru = 'dibayar';
+    $statusBaru = 'diproses';
 } elseif (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
     $statusBaru = 'dibatalkan';
 } else {
@@ -45,12 +44,12 @@ $stmt = $pdo->prepare("UPDATE pesanan SET status=? WHERE kode_pesanan=?");
 $stmt->execute([$statusBaru, $kode]);
 
 // Kirim notif Telegram kalau berhasil bayar
-if ($statusBaru === 'dibayar') {
+if ($statusBaru === 'diproses') {
     $row = $pdo->prepare("SELECT nama_penerima, total_harga FROM pesanan WHERE kode_pesanan=?");
     $row->execute([$kode]);
     $pesanan = $row->fetch();
     if ($pesanan) {
-        kirimNotifPembayaran($kode, $pesanan['nama_penerima'], $pesanan['total_harga'], 'Lunas');
+        kirimNotifPembayaran($kode, $pesanan['nama_penerima'], $pesanan['total_harga'], 'Lunas - Sedang Diproses');
     }
 }
 
