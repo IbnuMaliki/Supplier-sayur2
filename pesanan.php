@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['batalkan_pesanan'])) 
     $pesananId = (int)$_POST['pesanan_id'];
     $alasan    = trim($_POST['alasan_batal_customer'] ?? '');
 
-    $cek = $pdo->prepare("SELECT id, status FROM pesanan WHERE id=? AND user_id=? AND status='menunggu_bayar'");
+   $cek = $pdo->prepare("SELECT id, status FROM pesanan WHERE id=? AND user_id=? AND status IN ('menunggu_bayar','menunggu_pembayaran','diproses')");
     $cek->execute([$pesananId, $userId]);
     if ($cek->fetch()) {
         $details = $pdo->prepare("SELECT produk_id, jumlah FROM detail_pesanan WHERE pesanan_id=?");
@@ -356,14 +356,15 @@ $tabs = [
       </form>
       <?php endif; ?>
 
-      <?php if ($p['status'] === 'menunggu_bayar'): ?>
-      <button class="btn btn-sm"
-        style="background:var(--red-100);color:var(--red-800);border:1px solid #fecaca;"
-        onclick="document.getElementById('batal-modal-<?= $p['id'] ?>').style.display='flex'">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:middle;margin-right:4px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        Batalkan Pesanan
-      </button>
-      <?php endif; ?>
+     <?php if (in_array($p['status'], ['menunggu_bayar','menunggu_pembayaran','diproses','dikirim'])): ?>
+<?php $bisaBatal = in_array($p['status'], ['menunggu_bayar','menunggu_pembayaran','diproses']); ?>
+<button class="btn btn-sm"
+  style="background:var(--red-100);color:var(--red-800);border:1px solid #fecaca;<?= !$bisaBatal ? 'opacity:0.5;cursor:not-allowed;' : '' ?>"
+  <?= $bisaBatal ? "onclick=\"document.getElementById('batal-modal-{$p['id']}').style.display='flex'\"" : 'disabled' ?>>
+  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:middle;margin-right:4px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  Batalkan Pesanan
+</button>
+<?php endif; ?>
 
       <button class="btn btn-sm btn-outline-green" onclick="document.getElementById('rincian-modal-<?= $p['id'] ?>').style.display='flex'">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -443,7 +444,7 @@ $tabs = [
 <?php endif; ?>
 
 <!-- Modal Batalkan Pesanan -->
-<?php if ($p['status'] === 'menunggu_bayar'): ?>
+<?php if (in_array($p['status'], ['menunggu_bayar','menunggu_pembayaran','diproses'])): ?>
 <div id="batal-modal-<?= $p['id'] ?>"
      style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:2000; align-items:center; justify-content:center; padding:20px;">
   <div style="background:white; border-radius:var(--radius-xl); width:100%; max-width:440px; box-shadow:var(--shadow-lg); overflow:hidden;">
