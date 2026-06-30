@@ -381,7 +381,11 @@ $tabs = [
       </button>
       <?php endif; ?>
 
-      <a class="btn btn-sm btn-outline-green" href="<?= APP_URL ?>/chat.php">
+      <button class="btn btn-sm btn-outline-green" onclick="document.getElementById('rincian-modal-<?= $p['id'] ?>').style.display='flex'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Rincian Pesanan
+        </button>
+        <a class="btn btn-sm btn-outline-green" href="<?= APP_URL ?>/chat.php">
         <span class="icon-btn" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span> Chat Supplier
       </a>
     </div>
@@ -505,6 +509,102 @@ $tabs = [
               <?= $opt ?>
             </button>
             <?php endforeach; ?>
+        <!-- Modal Rincian Pesanan -->
+<div id="rincian-modal-<?= $p['id'] ?>"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:2000;align-items:center;justify-content:center;padding:20px;"
+     onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:white;border-radius:20px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+    
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#16a34a,#15803d);padding:20px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1;">
+      <div>
+        <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.8);margin-bottom:2px;">RINCIAN PESANAN</div>
+        <div style="font-size:16px;font-weight:800;color:white;"><?= sanitize($p['kode_pesanan']) ?></div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:2px;"><?= date('d M Y H:i', strtotime($p['created_at'])) ?></div>
+      </div>
+      <button onclick="document.getElementById('rincian-modal-<?= $p['id'] ?>').style.display='none'"
+        style="background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;">×</button>
+    </div>
+
+    <div style="padding:20px 24px;">
+
+      <!-- Status -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Status</div>
+        <span class="status-badge status-<?= $p['status'] ?>"><?= $statusLabel[$p['status']] ?? $p['status'] ?></span>
+      </div>
+
+      <!-- Detail Produk -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Detail Produk</div>
+        <div style="background:var(--slate-50);border-radius:10px;padding:12px;">
+          <?php foreach ($details as $d): ?>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--slate-100);">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--slate-700);"><?= sanitize($d['nama_produk']) ?></div>
+              <div style="font-size:12px;color:var(--slate-400);"><?= $d['jumlah'] ?> kg × <?= formatRupiah($d['harga_satuan']) ?></div>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:var(--slate-700);"><?= formatRupiah($d['subtotal']) ?></div>
+          </div>
+          <?php endforeach; ?>
+          <div style="display:flex;justify-content:space-between;padding-top:10px;font-size:14px;font-weight:800;">
+            <span>Ongkos Kirim</span>
+            <span style="color:var(--green-600);">GRATIS</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding-top:8px;font-size:15px;font-weight:800;border-top:1px solid var(--slate-200);margin-top:8px;">
+            <span>Total</span>
+            <span style="color:var(--green-700);"><?= formatRupiah($p['total_harga']) ?></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info Pengiriman -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Info Pengiriman</div>
+        <div style="background:var(--slate-50);border-radius:10px;padding:12px;font-size:13px;color:var(--slate-700);display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;gap:8px;">
+            <span style="font-weight:600;min-width:80px;color:var(--slate-500);">Penerima</span>
+            <span><?= sanitize($p['nama_penerima']) ?></span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <span style="font-weight:600;min-width:80px;color:var(--slate-500);">No. HP</span>
+            <span><?= sanitize($p['no_hp']) ?></span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <span style="font-weight:600;min-width:80px;color:var(--slate-500);">Alamat</span>
+            <span><?= sanitize($p['alamat_pengiriman']) ?></span>
+          </div>
+          <?php if (!empty($p['catatan'])): ?>
+          <div style="display:flex;gap:8px;">
+            <span style="font-weight:600;min-width:80px;color:var(--slate-500);">Catatan</span>
+            <span style="font-style:italic;"><?= sanitize($p['catatan']) ?></span>
+          </div>
+          <?php endif; ?>
+          <?php if (!empty($p['estimasi_pengiriman'])): ?>
+          <div style="display:flex;gap:8px;">
+            <span style="font-weight:600;min-width:80px;color:var(--slate-500);">Estimasi</span>
+            <span style="color:#1d4ed8;font-weight:600;"><?= date('d M Y', strtotime($p['estimasi_pengiriman'])) ?></span>
+          </div>
+          <?php endif; ?>
+        </div>
+      </div>
+
+      <!-- Metode Bayar -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:11px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Metode Pembayaran</div>
+        <div style="background:var(--slate-50);border-radius:10px;padding:12px;font-size:13px;font-weight:600;color:var(--slate-700);">
+          <?= sanitize($p['metode_bayar'] ?? '-') ?>
+        </div>
+      </div>
+
+      <!-- Tombol Tutup -->
+      <button onclick="document.getElementById('rincian-modal-<?= $p['id'] ?>').style.display='none'"
+        style="width:100%;padding:12px;background:var(--slate-100);border:none;border-radius:10px;font-size:13px;font-weight:600;color:var(--slate-600);cursor:pointer;font-family:var(--font-body);">
+        Tutup
+      </button>
+    </div>
+  </div>
+</div>
           </div>
           <textarea class="form-input" name="alasan_batal_customer" id="alasan-txt-<?= $p['id'] ?>"
             rows="2" placeholder="Tulis alasan pembatalan..."></textarea>
